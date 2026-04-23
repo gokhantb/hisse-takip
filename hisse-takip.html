@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hisse Takip</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #161920;
+    --surface2: #1e2230;
+    --border: #2a2f3d;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #4f7cff;
+    --accent-dim: rgba(79,124,255,0.12);
+    --green: #34d399;
+    --green-dim: rgba(52,211,153,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.1);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding: 2rem 1rem; }
+  .header { max-width: 1100px; margin: 0 auto 2.5rem; display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .logo { font-family: 'DM Mono', monospace; font-size: 1.4rem; font-weight: 500; color: var(--text); letter-spacing: -0.02em; }
+  .logo span { color: var(--accent); }
+  .subtitle { font-size: 0.75rem; color: var(--muted); margin-top: 4px; font-family: 'DM Mono', monospace; }
+  .api-setup { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto 2rem; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .api-setup label { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .api-setup input { flex: 1; min-width: 280px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; outline: none; }
+  .api-setup input:focus { border-color: var(--accent); }
+  .api-status { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .api-status.ok { background: var(--green-dim); color: var(--green); }
+  .api-status.warn { background: var(--amber-dim); color: var(--amber); }
+  .top-bar { max-width: 1100px; margin: 0 auto 1.5rem; display: flex; gap: 10px; }
+  .top-bar input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .top-bar input:focus { border-color: var(--accent); }
+  .top-bar input::placeholder { color: var(--muted); }
+  .btn-add { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; }
+  .btn-add:hover { opacity: 0.85; }
+  .chips { max-width: 1100px; margin: 0 auto 1.5rem; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px 4px 14px; font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text); }
+  .chip .x { cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; transition: color 0.15s; }
+  .chip .x:hover { color: var(--red); }
+  .grid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
+  .card:hover { border-color: #3a4055; }
+  .card-head { padding: 1.25rem 1.25rem 0; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .ticker { font-family: 'DM Mono', monospace; font-size: 1.2rem; font-weight: 500; color: var(--text); }
+  .co-name { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .price { font-family: 'DM Mono', monospace; font-size: 1.2rem; font-weight: 500; text-align: right; }
+  .chg { font-size: 11px; text-align: right; margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 1.25rem; }
+  .tab { padding: 8px 14px; font-size: 12px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; white-space: nowrap; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover { color: var(--text); }
+  .tab-body { padding: 1.1rem 1.25rem; display: none; }
+  .tab-body.active { display: block; }
+  .sec-label { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .ibar-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .ibar { flex: 1; height: 4px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+  .ibar-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease; }
+  .news-item { padding: 9px 0; border-top: 1px solid var(--border); font-size: 13px; line-height: 1.5; color: var(--text); }
+  .news-item:first-child { border-top: none; }
+  .news-src { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .analysis-box { margin-top: 12px; padding: 14px; background: var(--accent-dim); border-radius: var(--radius-sm); border-left: 2px solid var(--accent); font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+  .actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--border); }
+  .btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius-sm); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s; border: 1px solid var(--border); }
+  .btn-ghost { background: transparent; color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); background: var(--surface2); }
+  .btn-blue { background: var(--accent-dim); color: var(--accent); border-color: transparent; font-weight: 500; }
+  .btn-blue:hover { opacity: 0.8; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .loading { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); padding: 10px 0; font-family: 'DM Mono', monospace; }
+  .dots span { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; margin: 0 2px; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+  .insider-row { padding: 9px 0; border-top: 1px solid var(--border); font-size: 13px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .insider-row:first-child { border-top: none; }
+  .tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px; font-family: 'DM Mono', monospace; margin-left: 5px; }
+  .tag-buy { background: var(--green-dim); color: var(--green); }
+  .tag-sell { background: var(--red-dim); color: var(--red); }
+  .empty { max-width: 1100px; margin: 4rem auto; text-align: center; color: var(--muted); font-size: 14px; }
+  .sec-link { font-size: 11px; color: var(--accent); text-decoration: none; font-family: 'DM Mono', monospace; display: inline-block; margin-top: 12px; }
+  .sec-link:hover { text-decoration: underline; }
+  .card-loading { padding: 2.5rem; text-align: center; color: var(--muted); font-size: 13px; font-family: 'DM Mono', monospace; }
+  .center-btn { display: flex; justify-content: center; padding: 12px 0; }
+  .muted-text { font-size: 13px; color: var(--muted); padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">hisse<span>.</span>takip</div>
+    <div class="subtitle">powered by claude ai + web search</div>
+  </div>
+</div>
+
+<div class="api-setup">
+  <label>ANTHROPIC API KEY</label>
+  <input type="password" id="apiKey" placeholder="sk-ant-..." oninput="saveKey()" />
+  <div class="api-status warn" id="apiStatus">Anahtar girilmedi</div>
+</div>
+
+<div class="top-bar" style="max-width:1100px;margin:0 auto 1.5rem;">
+  <input type="text" id="tickerInput" placeholder="Hisse kodu ekle (örn: TSLA, NVDA...)" onkeydown="if(event.key==='Enter') addTicker()" />
+  <button class="btn-add" onclick="addTicker()">Ekle</button>
+</div>
+
+<div class="chips" id="chips"></div>
+
+<div class="grid" id="grid">
+  <div class="empty" id="emptyMsg">Hisse kodu ekleyerek başla</div>
+</div>
+
+<script>
+const state = { tickers: [], cache: {} };
+
+function saveKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  localStorage.setItem('anthropic_key', k);
+  document.getElementById('apiStatus').textContent = k.startsWith('sk-ant-') ? 'Hazır' : 'Geçersiz format';
+  document.getElementById('apiStatus').className = 'api-status ' + (k.startsWith('sk-ant-') ? 'ok' : 'warn');
+}
+
+function getKey() {
+  return localStorage.getItem('anthropic_key') || document.getElementById('apiKey').value.trim();
+}
+
+window.onload = () => {
+  const saved = localStorage.getItem('anthropic_key') || '';
+  if (saved) {
+    document.getElementById('apiKey').value = saved;
+    saveKey();
+  }
+  const savedTickers = JSON.parse(localStorage.getItem('tickers') || '["RKLB","EOSE"]');
+  savedTickers.forEach(t => { state.tickers.push(t); loadCard(t); });
+  renderChips();
+  updateEmpty();
+};
+
+function addTicker() {
+  const input = document.getElementById('tickerInput');
+  const val = input.value.trim().toUpperCase().replace(/[^A-Z0-9.]/g,'');
+  if (!val || state.tickers.includes(val)) { input.value=''; return; }
+  state.tickers.push(val);
+  localStorage.setItem('tickers', JSON.stringify(state.tickers));
+  input.value = '';
+  renderChips();
+  loadCard(val);
+  updateEmpty();
+}
+
+function removeTicker(t) {
+  state.tickers = state.tickers.filter(x => x !== t);
+  delete state.cache[t];
+  localStorage.setItem('tickers', JSON.stringify(state.tickers));
+  renderChips();
+  document.getElementById('card-'+t)?.remove();
+  updateEmpty();
+}
+
+function renderChips() {
+  document.getElementById('chips').innerHTML = state.tickers.map(t =>
+    `<div class="chip">${t}<span class="x" onclick="removeTicker('${t}')">×</span></div>`
+  ).join('');
+}
+
+function updateEmpty() {
+  document.getElementById('emptyMsg').style.display = state.tickers.length ? 'none' : 'block';
+}
+
+function switchTab(t, tab) {
+  ['news','insider','strategy'].forEach(s => {
+    document.getElementById(`tab-${t}-${s}`)?.classList.toggle('active', s===tab);
+    document.getElementById(`tbtn-${t}-${s}`)?.classList.toggle('active', s===tab);
+  });
+}
+
+async function callClaude(prompt, useSearch=true) {
+  const key = getKey();
+  if (!key) throw new Error('API anahtarı girilmedi');
+  const body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    messages: [{ role: 'user', content: prompt }]
+  };
+  if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('API hatası: ' + res.status);
+  const data = await res.json();
+  return data.content?.filter(b => b.type==='text').map(b => b.text).join('\n') || '';
+}
+
+function dots() {
+  return `<div class="dots"><span></span><span></span><span></span></div>`;
+}
+
+async function loadCard(ticker) {
+  const grid = document.getElementById('grid');
+  let card = document.getElementById('card-'+ticker);
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'card-'+ticker;
+    grid.appendChild(card);
+  }
+  card.innerHTML = `<div class="card-loading">Yükleniyor ${ticker} ${dots()}</div>`;
+
+  let priceData = { name: ticker, price: 'N/A', change: 0 };
+  try {
+    const raw = await callClaude(`What is the current stock price and today's percentage change for ${ticker}? Give me the full company name too. Reply ONLY with raw JSON, no markdown: {"name":"...","price":123.45,"change":2.3}`);
+    const clean = raw.replace(/```[a-z]*|```/gi,'').trim();
+    const m = clean.match(/\{[\s\S]*\}/);
+    if (m) priceData = JSON.parse(m[0]);
+  } catch(e) { console.warn('Price fetch error', e); }
+
+  state.cache[ticker] = { price: priceData };
+  const chg = parseFloat(priceData.change) || 0;
+  const chgClass = chg >= 0 ? 'pos' : 'neg';
+  const chgSign = chg >= 0 ? '+' : '';
+  const priceStr = typeof priceData.price === 'number' ? '$'+priceData.price.toFixed(2) : priceData.price;
+
+  card.innerHTML = `
+    <div class="card-head">
+      <div class="card-top">
+        <div>
+          <div class="ticker">${ticker}</div>
+          <div class="co-name">${priceData.name}</div>
+        </div>
+        <div>
+          <div class="price ${chgClass}">${priceStr}</div>
+          <div class="chg ${chgClass}">${chgSign}${chg.toFixed(2)}%</div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" id="tbtn-${ticker}-news" onclick="switchTab('${ticker}','news')">Haberler</div>
+      <div class="tab" id="tbtn-${ticker}-insider" onclick="switchTab('${ticker}','insider')">İçeriden alımlar</div>
+      <div class="tab" id="tbtn-${ticker}-strategy" onclick="switchTab('${ticker}','strategy')">Strateji</div>
+    </div>
+    <div class="tab-body active" id="tab-${ticker}-news">
+      <div id="news-body-${ticker}">
+        <div class="center-btn"><button class="btn btn-blue" onclick="loadNews('${ticker}')">Haberleri getir →</button></div>
+      </div>
+      <div id="analysis-${ticker}"></div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="refreshCard('${ticker}')">Yenile</button>
+        <button class="btn btn-blue" id="abtn-${ticker}" onclick="analyzeStock('${ticker}')">Claude analizi →</button>
+      </div>
+    </div>
+    <div class="tab-body" id="tab-${ticker}-insider">
+      <div id="insider-body-${ticker}">
+        <div class="center-btn"><button class="btn btn-blue" onclick="loadInsider('${ticker}')">İçeriden alımları getir →</button></div>
+      </div>
+    </div>
+    <div class="tab-body" id="tab-${ticker}-strategy">
+      <div id="strategy-body-${ticker}">
+        <div class="center-btn"><button class="btn btn-blue" onclick="loadStrategy('${ticker}')">Stratejiyi özetle →</button></div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadNews(ticker) {
+  const el = document.getElementById('news-body-'+ticker);
+  el.innerHTML = `<div class="loading">Haberler aranıyor ${dots()}</div>`;
+  try {
+    const text = await callClaude(`Search for the latest news about ${ticker} stock in the past 7 days. List the 4 most important news items as a numbered list with: headline and source. Be concise.`);
+    state.cache[ticker].newsText = text;
+    const lines = text.split('\n').filter(l => l.trim() && l.match(/^\d+\./));
+    const count = Math.min(lines.length || 2, 4);
+    const pct = (count/4*100).toFixed(0);
+    const color = count >= 3 ? '#f87171' : count >= 2 ? '#fbbf24' : '#34d399';
+    const newsHtml = (lines.length > 0 ? lines : text.split('\n').filter(l=>l.trim()))
+      .slice(0,5).map(l => `<div class="news-item">${l.replace(/^\d+\.\s*/,'')}</div>`).join('');
+    el.innerHTML = `
+      <div class="sec-label">Haber yoğunluğu</div>
+      <div class="ibar-wrap">
+        <div class="ibar"><div class="ibar-fill" style="width:${pct}%;background:${color};"></div></div>
+        <span style="font-size:11px;color:${color};font-family:'DM Mono',monospace;">${count}/4</span>
+      </div>
+      <div class="sec-label">Son haberler</div>
+      ${newsHtml}`;
+  } catch(e) {
+    el.innerHTML = `<div class="muted-text">Haber alınamadı: ${e.message}</div>`;
+  }
+}
+
+async function analyzeStock(ticker) {
+  const btn = document.getElementById('abtn-'+ticker);
+  const div = document.getElementById('analysis-'+ticker);
+  btn.disabled = true; btn.textContent = 'Analiz ediliyor...';
+  div.innerHTML = `<div class="loading">Claude düşünüyor ${dots()}</div>`;
+  const cached = state.cache[ticker];
+  const ctx = cached?.newsText ? `Son haberler:\n${cached.newsText}\n\n` : '';
+  try {
+    const text = await callClaude(`${ctx}${ticker} (${cached?.price?.name}) hissesi için Türkçe kısa haber analizi yap. Haberlerin tonu, öne çıkan gelişme ve kısa vadeli momentum hakkında 3-4 cümle. Bu bir haber özetidir, finansal tavsiye değildir.`);
+    div.innerHTML = `<div class="analysis-box"><div class="sec-label" style="margin-bottom:6px;">Claude analizi</div>${text}</div>`;
+  } catch(e) {
+    div.innerHTML = `<div class="muted-text">Analiz alınamadı: ${e.message}</div>`;
+  }
+  btn.disabled = false; btn.textContent = 'Claude analizi →';
+}
+
+async function loadInsider(ticker) {
+  const el = document.getElementById('insider-body-'+ticker);
+  el.innerHTML = `<div class="loading">Form 4 aranıyor ${dots()}</div>`;
+  try {
+    const text = await callClaude(`Search for recent insider trading transactions (SEC Form 4 filings) for ${ticker} in 2024-2025. List the 5 most recent with: person name, their title, buy or sell, number of shares, date. Numbered list, concise.`);
+    const lines = text.split('\n').filter(l => l.trim());
+    const html = lines.slice(0,6).map(l => {
+      const isBuy = /buy|purchas|acqui/i.test(l);
+      const isSell = /sell|sold|dispos/i.test(l);
+      const tag = isBuy ? '<span class="tag tag-buy">ALIŞ</span>' : isSell ? '<span class="tag tag-sell">SATIŞ</span>' : '';
+      return `<div class="insider-row"><div style="flex:1;line-height:1.5;">${l.replace(/^\d+\.\s*/,'')}${tag}</div></div>`;
+    }).join('');
+    el.innerHTML = html + `<a class="sec-link" href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&type=4&company=${ticker}&owner=include&count=20" target="_blank">SEC'te tüm Form 4 bildirimleri →</a>`;
+  } catch(e) {
+    el.innerHTML = `<div class="muted-text">Veri alınamadı: ${e.message}</div>`;
+  }
+}
+
+async function loadStrategy(ticker) {
+  const el = document.getElementById('strategy-body-'+ticker);
+  el.innerHTML = `<div class="loading">Strateji analiz ediliyor ${dots()}</div>`;
+  const name = state.cache[ticker]?.price?.name || ticker;
+  try {
+    const text = await callClaude(`${name} (${ticker}) şirketinin iş stratejisini Türkçe olarak kısaca özetle. Şunları değerlendir: 1) Ana iş modeli 2) Rekabet avantajı 3) Büyüme stratejisi 4) Ana riskler. Her madde 1-2 cümle.`);
+    el.innerHTML = `<div class="analysis-box">${text}</div><a class="sec-link" href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=${ticker}&type=10-K&owner=include&count=10" target="_blank">SEC'te 10-K raporları →</a>`;
+  } catch(e) {
+    el.innerHTML = `<div class="muted-text">Strateji alınamadı: ${e.message}</div>`;
+  }
+}
+
+async function refreshCard(ticker) {
+  delete state.cache[ticker];
+  await loadCard(ticker);
+}
+</script>
+</body>
+</html>
